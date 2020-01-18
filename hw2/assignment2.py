@@ -1,5 +1,13 @@
+#!/usr/bin/env python3
+
 import urllib.request
 import base64
+import math
+import sys
+import re
+from decimal import *
+from hashlib import sha256
+from pymd5 import md5, padding
 
 ################################################################################
 # 
@@ -76,56 +84,108 @@ def modexp(base, exp, modulus):
         exp = exp >> 1
     return ret
 
-#your code here
-
+def cube_root_bs(num):
+    """A binary search method to find the cube root of a number"""
+    e = 0.000001
+    start, end = 0, num
+    while start < end:
+        mid = Decimal(start + end) / Decimal(2)
+        diff = num - mid * mid * mid
+        if abs(diff) <= e:
+            return mid
+        elif diff > 0:
+            start = mid
+        else:
+            end = mid
 
 ################################################################################
 # PROBLEM 1 SOLUTION
 ################################################################################
 
-def problem1():
-    flag = ""
-    #your code here
-    return flag
-
+def problem1(cnetid):
+    url = b'http://www.flickur.com/?api_tag='
+    resp = make_query('one', cnetid, '')
+    tag = re.findall(b'api_tag=(\w+)&uname', resp)[0]
+    param = b'&uname=' + cnetid.encode('utf-8') + b'&role=user'
+    start = len(param) * 8
+    stop = (64 + 1024) * 8 + 1 # max len of secret||param
+    for i in range(start, stop, 8):
+        pad = padding(i)
+        padded_param = param + pad
+        # round to the next multiple of 512 since secret||padded_param is a mult of 512
+        counter = math.ceil(len(padded_param) * 8 / 512) * 512
+        # start at secret||padded_param
+        h = md5(state=bytes.fromhex(tag.decode('utf-8')), count=counter)
+        h.update('&role=admin')
+        forged_tag = h.hexdigest()
+        padded_param += b'&role=admin'
+        attack = url + forged_tag.encode('utf-8') + padded_param
+        res = make_query('one', cnetid, attack)
+        if res == b'Success!':
+            return res + b' Your query is ' + attack
+            break
 
 ################################################################################
 # PROBLEM 3 SOLUTION
 ################################################################################
 
-def problem3():
-    flag = ""
-    #your code here
-    return flag
+def problem3(cnetid):
+    resp = make_query('three', cnetid, '')
+    ctext = int(resp.decode('utf-8'), 16)
+    mult = modexp(256, e3, N3)
+    attack = ctext * mult % N3
+    return make_query('three', cnetid, hex(attack))
 
 
 ################################################################################
 # PROBLEM 4 SOLUTION
 ################################################################################
 
-def problem4():
-    flag = ""
-    #your code here
-    return flag
+def problem4(cnetid):
+    getcontext().prec = k4
+    ctext = int(make_query('four', cnetid, ''), 16)
+    lo, hi = Decimal(0), Decimal(N4)
+    step = Decimal(lo + hi) / 2
+    mult = modexp(2, e4, N4)
+    ctext = ctext * mult % N4
+    ret = None
+    while lo < hi:
+        resp = make_query('four', cnetid, hex(ctext))
+        if resp == b'\x00':
+            hi -= step
+        else:
+            lo += step
+        ret = math.ceil(lo)
+        if math.floor(hi) == ret:
+            break
+        ctext = ctext * mult % N4
+        step /= 2
+    if ret is None:
+        raise
+    return bytes.fromhex(format(ret, 'x'))
 
 ################################################################################
 # PROBLEM 5 SOLUTION
 ################################################################################
 
-def problem5():
-    flag = ""
-    #your code here
-    return flag
+def problem5(cnetid):
+    getcontext().prec = k5
+    h = sha256()
+    h.update(bytes(cnetid, 'utf-8'))
+    digest = h.digest()
+    pad = b'\x00\x01\xff\x00'
+    start = pad + digest + b'\x00' * (256 - len(pad) - len(digest))
+    signature = math.ceil(cube_root_bs(int(start.hex(), 16)))
+    return make_query('five', cnetid, hex(signature))
 
+def main():
+    cnetid = 'ruolinzheng'
+    if len(sys.argv) > 1:
+        cnetid = sys.argv[1]
+    print('Problem 1:\n', problem1(cnetid), '\n')
+    print('Problem 3:\n', problem3(cnetid), '\n')
+    print('Problem 4:\n', problem4(cnetid), '\n')
+    print('Problem 5:\n', problem5(cnetid), '\n')
 
-
-# below here will be run if you execute 'python3 assignment1.py'
-# use this for testing by uncommenting the lines for problems you wish to test
 if __name__ == "__main__":
-    #print("Problem 0 flag:", problem0())
-    #print("Problem 1 flag:", problem1())
-    #print("Problem 2 flag:", problem2())
-    #print("Problem 3 flag:", problem3())
-    #print("Problem 4 flag:", problem4())
-    #print("Problem 5 flag:", problem5())
-    exit()
+    main()
