@@ -121,9 +121,8 @@ def problem1(cnetid):
         padded_param += b'&role=admin'
         attack = url + forged_tag.encode('utf-8') + padded_param
         res = make_query('one', cnetid, attack)
-        if res == b'Success!':
-            return res + b' Your query is ' + attack
-            break
+        if b'flag' in res:
+            return res
 
 ################################################################################
 # PROBLEM 3 SOLUTION
