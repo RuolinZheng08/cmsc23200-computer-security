@@ -1,0 +1,9 @@
+Commands used:
+
+./fastcoll -p prefix.txt -o ruolinzheng-2c-1.sh ruolinzheng-2c-2.sh
+
+./ruolinzheng-2c-1.sh
+
+./ruolinzheng-2c-2.sh
+
+openssl dgst -md5 ruolinzheng-2c-1.sh ruolinzheng-2c-2.sh

@@ -1,0 +1,2 @@
+#!/bin/sh
+IFS='' read -r -d '' var << 'EOF'
