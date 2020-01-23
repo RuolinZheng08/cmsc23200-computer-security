@@ -144,21 +144,20 @@ def problem4(cnetid):
     getcontext().prec = k4
     ctext = int(make_query('four', cnetid, ''), 16)
     lo, hi = Decimal(0), Decimal(N4)
-    step = Decimal(lo + hi) / 2
     mult = modexp(2, e4, N4)
     ctext = ctext * mult % N4
     ret = None
     while lo < hi:
+        mid = (lo + hi) / Decimal(2)
         resp = make_query('four', cnetid, hex(ctext))
         if resp == b'\x00':
-            hi -= step
+            hi = mid
         else:
-            lo += step
+            lo = mid
         ret = math.ceil(lo)
         if math.floor(hi) == ret:
             break
         ctext = ctext * mult % N4
-        step /= 2
     if ret is None:
         raise
     return bytes.fromhex(format(ret, 'x'))
