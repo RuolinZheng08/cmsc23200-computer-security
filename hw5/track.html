@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <title>Assignment 5 Tracker</title>
+    <script src= "https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"> </script>
+</head>
+<body>
+    <span id="defaultfont" style="display:inline; width:auto">Lorem ipsum dolor sit amet</span>
+    <br>
+    <span id="changefont" style="display:inline; width:auto">Lorem ipsum dolor sit amet</span>
+
+<script type="text/javascript">
+
+    function setCookie(key, val, expire_days) {
+        var d = new Date();
+        d.setTime(d.getTime() + (expire_days * 24 * 60 * 60 * 1000));
+        document.cookie = key + "=" + val + ";path=/;" + "expires=" + d.toUTCString();
+    }
+
+    function getCookie(key) {
+        var cookies = decodeURIComponent(document.cookie).split("; ");
+        var keyval;
+        for (var i = 0; i < cookies.length; i += 1) {
+            keyval = cookies[i].split('=');
+            if (keyval[0] === key) {
+                return keyval[1];
+            }
+        }
+        return "";
+    }
+
+    function checkEnablePopup() {
+        var popup = window.open("");
+        if (popup != null) {
+            popup.close();
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    function checkFonts(fonts) {
+        var width = document.getElementById("defaultfont").offsetWidth;
+        var ret = ""; // 0-1 string
+        var div = document.getElementById("changefont");
+        for (var i = 0; i < fonts.length; i += 1) {
+            div.style.fontFamily = fonts[i];
+            var ret;
+            if (div.offsetWidth != width) {
+                console.log(width, div.offsetWidth, fonts[i]);
+                ret += "1";
+            } else {
+                ret += "0";
+            }
+        }
+        return ret;
+    }
+
+    var page = encodeURIComponent(window.location.pathname);
+    var user_agent = encodeURIComponent(navigator.userAgent);
+
+    var window_width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
+    var window_height = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
+
+    var do_not_track = navigator.doNotTrack;
+
+    // if the user disables cookie, it doesn't make sense to try to track them with cookies
+    var enable_cookie = navigator.cookieEnabled;
+    var cookie;
+    if (enable_cookie) {
+        var cookie_name = "cookie_tracker";
+        cookie = getCookie(cookie_name);
+        if (cookie === "") {
+            cookie = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+            setCookie(cookie_name, cookie, 10);
+        }
+    } else {
+        cookie = "";
+    }
+
+    var enable_popup = checkEnablePopup();
+
+    var fonts = checkFonts(['Abyssinica SIL', 'DejaVu Sans', 'GFS Baskerville', 'Liberation Sans', 'Roboto']);
+
+    var ip;
+    $.getJSON("https://api.ipify.org?format=json", function(data) {
+        ip = data.ip;
+        console.log(ip);
+        var src = "https://ruolinzheng.uchicagocs.com/track.php?page=" + page + "&cookie=" + cookie + "&ip=" + ip + "&window_width=" + window_width + "&window_height=" + window_height + "&user_agent=" + user_agent + "&enable_cookie=" + enable_cookie + "&do_not_track=" + do_not_track + "&enable_popup=" + enable_popup + "&fonts=" + fonts;
+        console.log(src);
+
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', src, true);
+
+        // If specified, responseType must be empty string or "text"
+        xhr.responseType = 'text';
+
+        xhr.onload = function () {
+            if (xhr.readyState === xhr.DONE) {
+                if (xhr.status === 200) {
+                    console.log(xhr.responseText);
+                }
+            }
+        };
+
+        xhr.send(null);
+    })
+
+</script>
+</body>
+</html>

