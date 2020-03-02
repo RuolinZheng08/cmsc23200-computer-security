@@ -15,10 +15,10 @@ def deidentify(df):
 def pii(df):
     return df[['Name', 'DOB', 'SSN', 'Zip']]
 
-def link_attack(deidenfied_df, pii_df):
+def link_attack(deidentified_df, pii_df):
     cols = list(set(deidentified_df.columns).intersection(set(pii_df.columns)))
     unique_did_df = deidentified_df.drop_duplicates(cols)
-    unique_pii_df = pii_df.drop_duplicates(cols)
+    unique_pii_df = pii_df.drop_duplicates(cols, keep=False)
     ret = unique_did_df.merge(unique_pii_df, on=cols)
     return ret
 
@@ -44,7 +44,7 @@ def laplace_mech(query, sensitivity, epsilon):
 # Problem 1.5
 ################################################################################
 
-def plot_error():
+def plot_error(query, sens):
     epsilons = [0.5, 1, 10]
     for e in epsilons:
         data = []
@@ -62,10 +62,11 @@ def main():
     adult = pd.read_csv('adult.csv')
     deidentified_df = deidentify(adult)
     pii_df = pii(adult)
-    print(link_attack(deidentified_df, pii_df).shape)
+    print('Shape of adult df:', adult.shape)
+    print('Shape of link_attack df:', link_attack(deidentified_df, pii_df).shape)
     assert is_k_anon(adult, ['Race', 'Sex'], 109) is True
     assert is_k_anon(adult, ['Race', 'Sex'], 110) is False
-    print(num_bachelors(adult))
+    print('Num bachelors:', num_bachelors(adult))
 
     query = 200
     sens = 1
