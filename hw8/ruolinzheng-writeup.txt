@@ -1,0 +1,33 @@
+3/7/2020
+Lynn Zheng
+CMSC 23200 HW8
+
+## sploit0
+This is a typical insecure usage of strcpy without any bound-checking. I used a buffer of size 100 to overwrite the return address to point back into my buffer where the shellcode is located.
+
+## sploit1
+This isn't very different from sploit0 except that the buf size in foo is bigger and that foo calls buf which executes the insecure strcpy. I used a buffer of size 400 to overwrite the return address in bar (which is supposed to return control to foo and then to main). The overwritten return address points back into my buffer where the shellcode is located.
+
+## sploit2
+The implementation of nstrcpy is buggy: It copies from i=0 up to i<=len, which effectively overwrites the last byte of the ebp when the input string has length equal to len. I made the last byte of my payload 0x00 such that the overwritten value of ebp ($ebp) would always end in 0x00. Now the system will attempt to find the return address at $ebp + 0x04, an address points back into my buffer. This place in the buffer holds my forged return address. It then points to the 4-byte block after it (ending in 0x08) where I've injected my shellcode.
+
+## sploit3
+I overflowed the 4-byte short by inputting 2 ** 16 + 399 = 65935 as the length. Because of the overflow, 65935 wraps to 399 in foo and passes the length check. I used the same method as in the above problems to overwrite the return address to point back into the buffer of length 65935 and execute the injected shellcode.
+
+## sploit4
+The bug we can exploit in this problem is that it passes a signed int as an unsigned size_t to memcpy. In main, the count in the input string is first converted to an unsigned long, then cast to a signed int with the variable name count. Then in foo, count * sizeof(struct widget_t) = count * 20 (which should be a signed int) is used as an unsigned size_t variable in memcpy.
+Because the valid amount of space for the widget array is 1000 * 20 = 20000, I used a buffer of length 20200. The trailing 200 bytes will overflow the return address and also hold the shellcode.
+To make the signed int count wrap to a negative number and pass the < MAX_WIDGETS check, I used the value 2 ** 31 + 1010 = 2147484658. The 1010 here is the valid 1000 bytes plus the overflowing 10 bytes. The rest of my attack for overwriting the return address to point into the shellcode portion of the payload is the same as in previous problems.
+
+## sploit5
+TOS: [local var][ebp][return addr][return addr for the called function][func args]
+We need to write past ebp, overwriting the return address with the address of the "system" function. The function arguments to system() will be the string "/bin/sh". `p system` in gdb gives the address to the system() function.
+To find the address of the environment variable string "SHELL=/bin/sh" in the target process, I ran it in gdb and inspected the stack with `x/500s $esp`. Scrolling through the stack yields the location of the string "SHELL=/bin/sh", and addr + 0x06 will be the address of "/bin/sh".
+The payload [AAAA][AAAA][system()][????]["/bin/sh"] will sprawn a root shell but will crash upon exit as ???? is not a valid address for the system() call to return to.
+To gracefully exit, we also need to overwrite the return address for system(), which should be sandwiched between the address of system() and the address of "/bin/sh" in our payload. `p exit` in gdb gives its address.
+Our final payload looks like:
+[AAAA][AAAA][system()][exit()]["/bin/sh"]
+
+## Reference (for return-to-libc)
+https://css.csail.mit.edu/6.858/2018/readings/return-to-libc.pdf
+https://www.exploit-db.com/docs/english/28553-linux-classic-return-to-libc-&-return-to-libc-chaining-tutorial.pdf
